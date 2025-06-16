@@ -1,0 +1,41 @@
+# Do NOT hide dist - we want the build output for deployment!
+hidden = [".config", ".git", "generated-icon.png", "node_modules"]
+
+modules = ["nodejs-20", "web", "postgresql-16"]
+
+# For local development (optional)
+run = "npm run dev"
+
+[nix]
+channel = "stable-24_05"
+packages = ["jq", "openssh", "yakut"]
+
+[phases.setup]
+nixPkgs = ["nodejs_18"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "NODE_ENV=production node dist/index.js"
+
+[deployment]
+deploymentTarget = "cloudrun"
+build = ["sh", "-c", "npm run build"]
+run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+# Correct rewrites to preserve /api routes and handle SPA
+[[deployment.rewrites]]
+from = "/api/*"
+to = "/api/:splat"
+
+[[deployment.rewrites]]
+from = "/*"
+to = "/index.html"
