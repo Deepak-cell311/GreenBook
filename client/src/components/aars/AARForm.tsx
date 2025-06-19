@@ -240,6 +240,25 @@ export default function AARForm({ eventId }: AARFormProps) {
     );
   }
 
+  // Show a banner if the event is not eligible for AAR submission
+  if (event && event.step < 7) {
+    return (
+      <div className="p-8 text-center">
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded mb-6 max-w-xl mx-auto">
+          <h2 className="text-lg font-bold mb-2">AAR Submission Not Yet Available</h2>
+          <p>
+            This event is not yet eligible for AAR submission. You can submit an AAR after the event execution date (step 6) is complete.
+          </p>
+          <div className="mt-4">
+            <Button variant="outline" onClick={() => navigate("/events")}>
+              Return to Events
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader>

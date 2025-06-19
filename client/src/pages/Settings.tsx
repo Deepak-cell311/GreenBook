@@ -169,7 +169,7 @@ export default function Settings() {
         <TabsList className="mb-6">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="hierarchy">Chain of Command</TabsTrigger>
+          {/* <TabsTrigger value="hierarchy">Chain of Command</TabsTrigger> */}
           
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
@@ -270,7 +270,7 @@ export default function Settings() {
         </TabsContent>
 
         {/* Chain of Command */}
-        <TabsContent value="hierarchy">
+        {/* <TabsContent value="hierarchy">
           <Card>
             <CardHeader>
               <CardTitle>Military Hierarchy</CardTitle>
@@ -282,7 +282,7 @@ export default function Settings() {
               <UserChainOfCommand />
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
 
         {/* Security Settings */}
         <TabsContent value="security">

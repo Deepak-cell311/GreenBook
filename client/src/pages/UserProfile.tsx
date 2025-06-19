@@ -5,12 +5,12 @@ import { format } from "date-fns";
 import { User, Event, AAR } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth-provider";
-import { 
-  Loader2, 
-  Calendar, 
-  Building, 
-  FileText, 
-  User as UserIcon, 
+import {
+  Loader2,
+  Calendar,
+  Building,
+  FileText,
+  User as UserIcon,
   Shield,
   Activity,
   ClipboardList,
@@ -196,7 +196,7 @@ export default function UserProfile() {
               </Avatar>
               <h2 className="text-xl font-bold">{user.name}</h2>
               <p className="text-muted-foreground">@{user.username}</p>
-              
+
               <div className="flex flex-wrap justify-center gap-2 mt-2">
                 <Badge variant="secondary">{user.rank}</Badge>
                 <Badge variant="outline">{user.role}</Badge>
@@ -230,7 +230,7 @@ export default function UserProfile() {
 
             <div className="space-y-2">
               <h3 className="text-sm font-medium mb-2">Activity Summary</h3>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-muted/60 rounded p-2 text-center">
                   <p className="text-2xl font-bold">{metrics.totalEvents}</p>
@@ -262,7 +262,7 @@ export default function UserProfile() {
               <TabsTrigger value="aars">AARs</TabsTrigger>
               <TabsTrigger value="analysis">Analysis</TabsTrigger>
             </TabsList>
-            
+
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-4">
               <Card>
@@ -278,7 +278,7 @@ export default function UserProfile() {
                   </p>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -291,7 +291,7 @@ export default function UserProfile() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             {/* Events Tab */}
             <TabsContent value="events" className="space-y-4">
               <Card>
@@ -344,7 +344,7 @@ export default function UserProfile() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             {/* AARs Tab */}
             <TabsContent value="aars" className="space-y-4">
               <Card>
@@ -365,9 +365,17 @@ export default function UserProfile() {
                           <div key={aar.id} className="border rounded-md p-3 hover:border-primary">
                             <div className="flex justify-between items-start mb-2">
                               <div>
-                                <div className="font-medium">
-                                  AAR for Event #{aar.eventId}
-                                </div>
+                                {(() => {
+                                  const event = sortedEvents.find((e) => e.id === aar.eventId);
+                                  if (!event) return <div className="font-medium">Unknown Event</div>;
+
+                                  return (
+                                    <Link href={`/events/${event.id}`} className="font-medium hover:underline text-primary">
+                                      {event.title} — {format(new Date(event.date), "MMMM d, yyyy")}
+                                    </Link>
+                                  );
+                                })()}
+
                                 <div className="text-sm text-muted-foreground">
                                   Submitted on {format(new Date(aar.createdAt), "MMMM d, yyyy")}
                                 </div>
@@ -387,7 +395,7 @@ export default function UserProfile() {
                                   <p className="text-sm text-muted-foreground">None provided</p>
                                 )}
                               </div>
-                              
+
                               <div>
                                 <p className="text-xs font-medium text-amber-600 dark:text-amber-500">IMPROVE ({aar.improveItems.length})</p>
                                 {aar.improveItems.length > 0 ? (
@@ -419,7 +427,7 @@ export default function UserProfile() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             {/* Analysis Tab */}
             <TabsContent value="analysis" className="space-y-4">
               <AnalysisTab userId={userId} />

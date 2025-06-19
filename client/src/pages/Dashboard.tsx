@@ -18,7 +18,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { accessibleUnits, getSubordinateUnits, getUsersInUnit } = useHierarchy();
   const { toast } = useToast();
-  
+
   // Handler for sending a test notification
   const handleTestNotification = async () => {
     try {
@@ -26,7 +26,7 @@ export default function Dashboard() {
         method: 'POST',
       });
       const data = await response.json();
-      
+
       if (data.success) {
         toast({
           title: "Test Notification Sent",
@@ -61,15 +61,15 @@ export default function Dashboard() {
     queryKey: [user ? `/api/units/${user.unitId}/events` : 'no-unit-events'],
     enabled: !!user,
   });
-  
+
   // Get all events (additional data source)
   const { data: allEvents = [] as Event[] } = useQuery<Event[]>({
     queryKey: ['/api/events'],
     enabled: !!user,
   });
-  
+
   // Combine events from both sources and remove duplicates
-  const events = [...(unitEvents || []), ...(allEvents || [])].filter((event, index, self) => 
+  const events = [...(unitEvents || []), ...(allEvents || [])].filter((event, index, self) =>
     index === self.findIndex(e => e?.id === event?.id)
   );
 
@@ -98,54 +98,54 @@ export default function Dashboard() {
   // Get total personnel (parent unit and all subunits)
   const getTotalPersonnel = (): number => {
     if (!user || !accessibleUnits.length) return 0;
-    
+
     // Get the current user's unit
     const userUnit = accessibleUnits.find(u => u.id === user.unitId);
     if (!userUnit) return 0;
-    
+
     // Get direct personnel in the unit
     const directPersonnel = getUsersInUnit(user.unitId).length;
-    
+
     // Recursive function to get personnel in subunits
     const getPersonnelInSubunits = (unitId: number): number => {
       const subunits = getSubordinateUnits(unitId);
-      
+
       // Sum the personnel in this level of subunits
       const subunitPersonnel = subunits.reduce((total, unit) => {
         return total + getUsersInUnit(unit.id).length;
       }, 0);
-      
+
       // Recursively add personnel from deeper subunits
       const deeperSubunitPersonnel = subunits.reduce((total, unit) => {
         return total + getPersonnelInSubunits(unit.id);
       }, 0);
-      
+
       return subunitPersonnel + deeperSubunitPersonnel;
     };
-    
+
     // Sum direct personnel and all personnel in subunits
     return directPersonnel + getPersonnelInSubunits(user.unitId);
   };
 
   // Find active events based on new requirements
   console.log("Events before filtering:", events);
-  
+
   const activeEvents = events.filter((event: any) => {
     console.log("Checking event:", event.id, event.title, "Step:", event.step);
-    
+
     if (event.isDeleted) {
       console.log("Event is deleted, skipping:", event.id);
       return false;
     }
-    
+
     const today = new Date();
-    
+
     // Check if event has already been issued
     if (event.step < 1) {
       console.log("Event step < 1, skipping:", event.id);
       return false;
     }
-    
+
     // Check if event has been completed (step 7 or 8 with dates in the past)
     if (event.step === 7 || event.step === 8) {
       // If step has a date and it's in the past, the event is complete
@@ -158,23 +158,23 @@ export default function Dashboard() {
         return false;
       }
     }
-    
+
     // Check if execution date is in the past
     if (event.executionDate && new Date(event.executionDate) < today) {
       console.log("Event executionDate in past, skipping:", event.id, "Date:", event.executionDate);
       return false;
     }
-    
+
     // If none of the above conditions are met, the event is active
     console.log("Event is active:", event.id);
     return true;
   });
-  
+
   console.log("Active events after filtering:", activeEvents);
 
   // Get current training event (most recent active event)
-  const currentTrainingEvent = activeEvents.length > 0 
-    ? activeEvents.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] 
+  const currentTrainingEvent = activeEvents.length > 0
+    ? activeEvents.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
     : null;
 
   // We no longer need this since we're showing the training progress in the ActiveEventsDropdown component
@@ -197,7 +197,7 @@ export default function Dashboard() {
     });
 
   return (
-    <div className="p-6">
+    <div className="p-2">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -209,14 +209,14 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
-          <Button 
-            variant="outline" 
+          {/* <Button
+            variant="outline"
             className="mr-2"
             onClick={handleTestNotification}
           >
             <Bell className="h-4 w-4 mr-2" />
             Test Notification
-          </Button>
+          </Button> */}
           <Button variant="outline" className="mr-2">
             Export Data
           </Button>
@@ -227,7 +227,7 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
-      
+
       <Separator className="my-6" />
 
       {/* Stats Grid */}
@@ -240,7 +240,7 @@ export default function Dashboard() {
           linkText="View all personnel"
           linkHref="/units"
         />
-        
+
         <StatCard
           title="Active Events"
           value={activeEvents.length}
@@ -249,7 +249,7 @@ export default function Dashboard() {
           linkText="View all events"
           linkHref="/events"
         />
-        
+
         <StatCard
           title="Completed AARs"
           value={aars.length}
@@ -258,13 +258,14 @@ export default function Dashboard() {
           linkText="View all AARs"
           linkHref="/aars"
         />
-        
+
         <StatCard
           title="Pending AARs"
           value={
-            events.filter((event: any) => 
-              !event.isDeleted && 
-              !aars.some((aar: any) => aar.eventId === event.id)
+            events.filter((event: any) =>
+              !event.isDeleted &&
+              !aars.some((aar: any) => aar.eventId === event.id) &&
+              event.step >= 7 // Only count events past step 6
             ).length
           }
           icon={<AlertTriangle className="h-5 w-5 text-white" />}
@@ -287,12 +288,12 @@ export default function Dashboard() {
         <div className="lg:col-span-1">
           <ActiveEventsDropdown events={activeEvents} isLoading={!events} />
         </div>
-        
+
         {/* Recent AARs */}
         <div className="lg:col-span-1">
           <RecentAARs aars={recentAARs} />
         </div>
-        
+
         {/* Venice AI Insights */}
         <div className="lg:col-span-1">
           {veniceAnalysis && (

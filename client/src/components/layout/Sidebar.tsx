@@ -76,23 +76,24 @@ export function Sidebar() {
         </h1>
       </div>
 
-      {/* User Info */}
       {user && (
-        <div className="px-4 py-3 bg-sidebar-background/60 border-b border-sidebar-border">
-          <div className="flex items-center">
-            <div className="flex-shrink-0 bg-sidebar-primary rounded-full p-2">
-              <User className="h-5 w-5 text-sidebar-primary-foreground" />
+        <Link href={`/users/${user.id}`}>
+          <a className="block px-4 py-3 bg-sidebar-background/60 border-b border-sidebar-border hover:bg-sidebar-accent/10 transition-colors">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 bg-sidebar-primary rounded-full p-2">
+                <User className="h-5 w-5 text-sidebar-primary-foreground" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-sidebar-foreground">
+                  {user.rank} {user.name}
+                </p>
+                <p className="text-xs text-sidebar-foreground/70">{user.role}</p>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-sidebar-foreground">
-                {user.rank} {user.name}
-              </p>
-              <p className="text-xs text-sidebar-foreground/70">{user.role}</p>
-            </div>
-          </div>
-        </div>
+          </a>
+        </Link>
       )}
-
+        
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="px-2 space-y-1">

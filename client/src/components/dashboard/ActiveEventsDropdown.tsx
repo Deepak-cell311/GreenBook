@@ -120,7 +120,15 @@ export default function ActiveEventsDropdown({ events, isLoading = false }: Acti
                           const isCompleted = index + 1 < selectedEvent.step;
                           const isCurrent = index + 1 === selectedEvent.step;
                           const isPending = index + 1 > selectedEvent.step;
-                          
+                          // Map step index to event.stepXDate
+                          const stepDateKey = `step${index + 1}Date`;
+                          const stepDateRaw = (selectedEvent as any)[stepDateKey];
+                          let stepDate = '';
+                          if (stepDateRaw) {
+                            try {
+                              stepDate = format(new Date(stepDateRaw), 'MMM d');
+                            } catch {}
+                          }
                           return (
                             <div key={step.id} className="text-center">
                               <div 
@@ -136,8 +144,11 @@ export default function ActiveEventsDropdown({ events, isLoading = false }: Acti
                                 </span>
                               </div>
                               <div className="mt-1 text-[10px] leading-tight" title={step.name}>
-                                {step.name.length > 6 ? `${step.name.slice(0, 6)}...` : step.name}
+                                {step.name.length > 6 ? `${step.name.slice(0, 6)}` : step.name}
                               </div>
+                              {stepDate && (
+                                <div className="text-[9px] text-gray-500 mt-0.5">{stepDate}</div>
+                              )}
                             </div>
                           );
                         })}
