@@ -8,7 +8,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex overflow-hidden">
       {/* Sidebar - hidden on mobile */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
         <Sidebar />

@@ -10,7 +10,7 @@ export default function CreateEvent() {
       </Helmet>
       
       <div className="p-6">
-        <div className="mb-6">
+        <div>
           <h1 className="text-2xl font-condensed font-bold text-gray-900">
             Create Training Event
           </h1>

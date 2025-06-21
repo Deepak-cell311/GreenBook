@@ -652,6 +652,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/notifications', isAuthenticated, async (req, res) => {
+    try {
+      const { userId, title, message, type = 'event', link = null, relatedEntityId = null, relatedEntityType = null } = req.body;
+  
+      if (!userId || !title || !message) {
+        return res.status(400).json({ message: 'Missing required fields: userId, title, or message' });
+      }
+  
+      const notification = await storage.createNotification({
+        userId,
+        title,
+        message,
+        type,
+        relatedEntityId,
+        relatedEntityType,
+      });
+  
+      res.status(201).json({ success: true, notification });
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      res.status(500).json({ message: 'Failed to create notification' });
+    }
+  });
+  
   // Mark notification as read
   app.post('/api/notifications/:id/mark-read', isAuthenticated, async (req, res) => {
     try {
@@ -965,7 +989,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(allEvents);
       }
 
-      // For regular users, get events for the user's unit
+      // For regular users, get events for the user's unith
       const unitEvents = await storage.getEventsByUnit((req.user as any).unitId);
       console.log(`Found ${unitEvents.length} unit events`);
 
@@ -1662,24 +1686,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get AARs by unit ID
-  app.get('/api/units/:id/aars', isAuthenticated, async (req, res) => {
-    try {
-      const unitId = parseInt(req.params.id);
-
-      if (isNaN(unitId)) {
-        return res.status(400).json({ message: 'Invalid unit ID' });
-      }
-
-      const unitAARs = await storage.getAARsByUnit(unitId);
-      console.log(`Found ${unitAARs.length} AARs for unit ${unitId}`);
-      res.json(unitAARs);
-    } catch (error) {
-      console.error("Error getting unit AARs:", error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
   // Get AARs that are accessible to the current user through unit hierarchy
   app.get('/api/aars/accessible', isAuthenticated, async (req, res) => {
     try {
@@ -1846,19 +1852,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           // Create notifications for each participant (except the creator)
-          const participantPromises = event.participants
-            .filter(id => id !== creator.id) // Don't notify the creator
-            .map(async (participantId: number) => {
-              // Create notification
-              return await storage.createNotification({
-                userId: participantId,
-                title: 'New Event Assignment',
-                message: `You've been assigned as a participant in "${event.title}" on ${formattedDate} by ${creatorName}.`,
-                type: 'event_assignment',
-                relatedEntityId: event.id,
-                relatedEntityType: 'event'
-              });
+          const participantPromises = event.participants.map(async (participantId: number) => {
+            const isCreator = participantId === creator.id;
+            return await storage.createNotification({
+              userId: participantId,
+              title: 'New Event Assignment',
+              message: isCreator
+                ? `You created the event "${event.title}" on ${formattedDate}.`
+                : `You've been assigned as a participant in "${event.title}" on ${formattedDate} by ${creatorName}.`,
+              type: 'event_assignment',
+              relatedEntityId: event.id,
             });
+          });
 
           // Wait for all notifications to be created
           await Promise.all(participantPromises);
@@ -1879,6 +1884,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Unit routes
 
+  // Get AARs by unit ID
+  app.get('/api/units/:id/aars', isAuthenticated, async (req, res) => {
+    try {
+      const unitId = parseInt(req.params.id);
+
+      if (isNaN(unitId)) {
+        return res.status(400).json({ message: 'Invalid unit ID' });
+      }
+
+      const unitAARs = await storage.getAARsByUnit(unitId);
+      console.log(`Found ${unitAARs.length} AARs for unit ${unitId}`);
+      res.json(unitAARs);
+    } catch (error) {
+      console.error("Error getting unit AARs:", error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
   // Get unit by referral code
   app.get('/api/units/referral/:code', async (req, res) => {
     try {
@@ -2118,6 +2140,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to generate prompt-based analysis' });
     }
   });
+  
+  app.get('/api/units', isAuthenticated, async (req, res) => {
+    try {
+      const units = await storage.getAllUnits(); // This should fetch all units from your DB
+      res.status(200).json(units);
+    } catch (error) {
+      console.error("Error fetching units:", error);
+      res.status(500).json({ message: 'Error fetching units' });
+    }
+  });
+  
 
   // Send AAR feedback requests to event participants
   app.post('/api/events/:eventId/request-aar-feedback', isAuthenticated, async (req, res) => {
@@ -2206,7 +2239,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get a single unit by ID
+  app.get('/api/units/:id', isAuthenticated, async (req, res) => {
+    try {
+      const unitId = parseInt(req.params.id);
+      if (isNaN(unitId)) {
+        return res.status(400).json({ message: 'Invalid unit ID' });
+      }
+
+      const unit = await storage.getUnit(unitId);
+      if (!unit) {
+        return res.status(404).json({ message: 'Unit not found' });
+      }
+
+      res.json(unit);
+    } catch (error) {
+      console.error(`Error getting unit by ID ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+ 
   const httpServer = createServer(app);
 
   return httpServer;
 }
+  

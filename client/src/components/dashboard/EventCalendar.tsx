@@ -224,7 +224,7 @@ export default function EventCalendar({ events, viewType = "month", accessibleUn
 
   return (
     <Card className="col-span-1 lg:col-span-2">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 p-1">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <CalendarIcon className="mr-2 h-5 w-5" />

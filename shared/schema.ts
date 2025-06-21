@@ -95,7 +95,7 @@ export const events = pgTable("events", {
   conceptOfOperation: text("concept_of_operation"),
   resources: text("resources"),
   eventType: text("event_type").default("training").notNull(), // Training, Mission, Exercise, etc.
-  participants: json("participants").notNull(), // Array of user IDs
+  participants: json("participants").$type<number[]>().notNull().default([]), // Array of user IDs
   participatingUnits: json("participating_units").default('[]').notNull(), // Array of unit IDs
   notifyParticipants: boolean("notify_participants").default(false).notNull(), // Flag to notify participants when in Step 6 (AAR)
   // Step notes

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Notification {
   id: number;
@@ -28,29 +29,28 @@ interface Notification {
 export default function NotificationDropdown() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [unreadCount, setUnreadCount] = useState(0);
 
   // Fetch notifications
-  const { data: notifications = [], refetch } = useQuery({
+  const { data: notifications, refetch } = useQuery({
     queryKey: ['/api/notifications'],
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/notifications');
+      return await res.json();
+    },
+    refetchInterval: 10000 // Optional: auto-refresh every 10s
   });
 
-  // Update unread count when notifications change
-  useEffect(() => {
-    if (notifications && Array.isArray(notifications)) {
-      setUnreadCount(notifications.filter((n: Notification) => !n.read).length);
-    }
-  }, [notifications]);
+  const unreadCount = notifications?.filter((n: Notification) => !n.read).length || 0;
 
   // Handle notification click
   const handleNotificationClick = async (notification: Notification) => {
     try {
       // Mark as read
       if (!notification.read) {
-        await fetch(`/api/notifications/${notification.id}/mark-read`, {
+        const res = await fetch(`/api/notifications/${notification.id}/mark-read`, {
           method: 'POST',
         });
+        if (!res.ok) throw new Error('Failed to mark as read');
         refetch();
       }
 
@@ -58,6 +58,7 @@ export default function NotificationDropdown() {
       if (notification.type === 'aar_request' && notification.relatedEntityId) {
         navigate(`/submit-aar/${notification.relatedEntityId}`);
       }
+      // Add more navigation logic for other types if needed
     } catch (error) {
       console.error('Error handling notification click', error);
       toast({

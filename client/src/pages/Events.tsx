@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-provider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Calendar, MapPin, Users, MoreHorizontal, Loader2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
 } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -27,7 +27,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,28 +36,28 @@ export default function Events() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("all");
-  
+
   // Get events for the unit
   const { data: unitEvents = [], isLoading: isLoadingUnitEvents, error: unitEventsError } = useQuery<any[]>({
     queryKey: user ? [`/api/units/${user.unitId}/events`] : [''],
     enabled: !!user,
   });
-  
+
   // Get all events (additional data source)
   const { data: allEvents = [], isLoading: isLoadingAllEvents, error: allEventsError } = useQuery<any[]>({
     queryKey: ['/api/events'],
     enabled: !!user,
   });
-  
+
   // Combine events from both sources and remove duplicates
-  const events = [...unitEvents, ...allEvents].filter((event, index, self) => 
+  const events = [...unitEvents, ...allEvents].filter((event, index, self) =>
     index === self.findIndex(e => e.id === event.id)
   );
-  
+
   // Derive loading and error states
   const isLoading = isLoadingUnitEvents || isLoadingAllEvents;
   const error = unitEventsError || allEventsError;
-  
+
   // Log for debugging
   console.log("User:", user);
   console.log("Events data:", events);
@@ -90,17 +89,17 @@ export default function Events() {
   // Filter events based on active tab
   const filteredEvents = Array.isArray(events) ? events.filter((event: any) => {
     console.log("Filtering event:", event);
-    
+
     // Handle case where event might be null or missing properties
     if (!event) return false;
-    
+
     if (activeTab === "all") return !event.isDeleted;
     if (activeTab === "active") return !event.isDeleted && event.step < 8;
     if (activeTab === "completed") return !event.isDeleted && event.step === 8;
     if (activeTab === "deleted") return event.isDeleted;
     return true;
   }) : [];
-  
+
   console.log("Filtered events:", filteredEvents);
 
   // Get status badge based on step
@@ -118,6 +117,10 @@ export default function Events() {
     if (confirm("Are you sure you want to delete this event?")) {
       deleteEvent.mutate(eventId);
     }
+  };
+
+  const sendNotification = async (userId, message) => {
+    await apiRequest('POST', '/api/notifications', { userId, message });
   };
 
   return (
@@ -161,7 +164,7 @@ export default function Events() {
                 <Calendar className="h-12 w-12 text-muted-foreground/60 mb-4" />
                 <h3 className="text-lg font-medium">No events found</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {activeTab === "deleted" 
+                  {activeTab === "deleted"
                     ? "There are no deleted events."
                     : "Start by creating a new training event."}
                 </p>
@@ -202,7 +205,7 @@ export default function Events() {
                           {event.isDeleted ? (
                             <DropdownMenuItem>Restore Event</DropdownMenuItem>
                           ) : (
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               className="text-destructive"
                               onClick={() => handleDeleteEvent(event.id)}
                             >
@@ -234,7 +237,7 @@ export default function Events() {
                         <p className="font-medium text-xs uppercase text-muted-foreground">Objectives:</p>
                         <p className="text-sm mt-1 line-clamp-2">{event.objectives}</p>
                       </div>
-                      
+
                       <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
                         <Link href={`/events/${event.id}`}>
                           <Button variant="outline" size="sm">View Details</Button>

@@ -27,12 +27,46 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import UserChainOfCommand from "@/components/users/UserChainOfCommand";
 import AnalysisTab from "@/components/users/AnalysisTab";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 export default function UserProfile() {
   const [, params] = useRoute("/users/:id");
   const userId = params?.id ? parseInt(params.id) : -1;
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Notification settings state
+  const [notifEnabled, setNotifEnabled] = useState(true);
+  const [notifTypes, setNotifTypes] = useState({
+    newEvents: true,
+    aarSubmissions: true,
+    trainingStep: true,
+    veniceAI: true,
+  });
+  const [notifSaving, setNotifSaving] = useState(false);
+  const [notifSaved, setNotifSaved] = useState<null | 'success' | 'error'>(null);
+
+  // Handler for toggles
+  const handleNotifTypeChange = (type: keyof typeof notifTypes) => {
+    setNotifTypes((prev) => ({ ...prev, [type]: !prev[type] }));
+  };
+
+  const handleNotifSave = async () => {
+    setNotifSaving(true);
+    setNotifSaved(null);
+    try {
+      // TODO: Replace with real API call to save notification preferences
+      await new Promise((res) => setTimeout(res, 800));
+      setNotifSaved('success');
+      // toast.success('Notification settings saved');
+    } catch (e) {
+      setNotifSaved('error');
+      // toast.error('Failed to save notification settings');
+    } finally {
+      setNotifSaving(false);
+    }
+  };
 
   // Fetch the requested user data
   const {
@@ -199,7 +233,7 @@ export default function UserProfile() {
 
               <div className="flex flex-wrap justify-center gap-2 mt-2">
                 <Badge variant="secondary">{user.rank}</Badge>
-                <Badge variant="outline">{user.role}</Badge>
+                <Badge variant="outline">{user.role === "Commander" ? "Unit admin" : user.role}</Badge>
               </div>
             </div>
 
@@ -250,6 +284,85 @@ export default function UserProfile() {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Notification Settings Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Settings</CardTitle>
+            <CardDescription>Configure how you want to receive notifications</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center mb-4">
+              <Switch
+                checked={notifEnabled}
+                onCheckedChange={setNotifEnabled}
+                id="enable-notifications"
+                className="mr-2"
+              />
+              <label htmlFor="enable-notifications" className="font-medium">
+                Enable Notifications
+              </label>
+            </div>
+            <div className="mb-4 text-muted-foreground text-sm">
+              Receive notifications about new events and AARs
+            </div>
+            <div className="space-y-2 ml-2">
+              <div className="flex items-center">
+                <Switch
+                  checked={notifTypes.newEvents && notifEnabled}
+                  onCheckedChange={() => handleNotifTypeChange('newEvents')}
+                  disabled={!notifEnabled}
+                  id="notif-new-events"
+                  className="mr-2"
+                />
+                <label htmlFor="notif-new-events">New events assigned to you</label>
+              </div>
+              <div className="flex items-center">
+                <Switch
+                  checked={notifTypes.aarSubmissions && notifEnabled}
+                  onCheckedChange={() => handleNotifTypeChange('aarSubmissions')}
+                  disabled={!notifEnabled}
+                  id="notif-aar-submissions"
+                  className="mr-2"
+                />
+                <label htmlFor="notif-aar-submissions">AAR submissions for your events</label>
+              </div>
+              <div className="flex items-center">
+                <Switch
+                  checked={notifTypes.trainingStep && notifEnabled}
+                  onCheckedChange={() => handleNotifTypeChange('trainingStep')}
+                  disabled={!notifEnabled}
+                  id="notif-training-step"
+                  className="mr-2"
+                />
+                <label htmlFor="notif-training-step">Training step changes</label>
+              </div>
+              <div className="flex items-center">
+                <Switch
+                  checked={notifTypes.veniceAI && notifEnabled}
+                  onCheckedChange={() => handleNotifTypeChange('veniceAI')}
+                  disabled={!notifEnabled}
+                  id="notif-venice-ai"
+                  className="mr-2"
+                />
+                <label htmlFor="notif-venice-ai">Venice AI insights and recommendations</label>
+              </div>
+            </div>
+            <Button
+              className="mt-6"
+              onClick={handleNotifSave}
+              disabled={notifSaving}
+            >
+              {notifSaving ? 'Saving...' : 'Save Preferences'}
+            </Button>
+            {notifSaved === 'success' && (
+              <div className="mt-2 text-green-700 text-sm">Preferences saved!</div>
+            )}
+            {notifSaved === 'error' && (
+              <div className="mt-2 text-red-700 text-sm">Failed to save preferences.</div>
+            )}
           </CardContent>
         </Card>
 

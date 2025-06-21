@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2, Calendar, MapPin, Users, Target, Box, Clipboard, ArrowLeft, FileText, PlusCircle, UserPlus, Building, Shield, X } from "lucide-react";
@@ -31,12 +31,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 
 // Define an interface for the timeline steps
@@ -145,6 +145,9 @@ export default function EventDetail() {
     enabled: eventId > 0,
   });
 
+  console.log("Events: ", event);
+  
+
   // Query for AARs related to this event
   const {
     data: aars,
@@ -182,6 +185,24 @@ export default function EventDetail() {
       return await res.json();
     }
   });
+
+  // Log the units data for debugging
+  console.log("Fetched Units:", units);
+
+  const unitsMap = useMemo(() => {
+    const map: Record<number, Unit> = {};
+    if (units) {
+      for (const unit of units) {
+        map[Number(unit.id)] = unit;
+      }
+    }
+    return map;
+  }, [units]);
+
+  const eventUnit = useMemo(() => {
+    if (!units || !event?.unitId) return undefined;
+    return units.find((unit: Unit) => Number(unit.id) === Number(event.unitId));
+  }, [units, event]);
 
   // Form for adding participants
   const addParticipantsForm = useForm<AddParticipantsInputValues>({
@@ -259,14 +280,39 @@ export default function EventDetail() {
       const res = await apiRequest("POST", `/api/events/${eventId}/add-participants`, formData);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: async (_data, variables) => {
       setShowAddParticipantsDialog(false);
       addParticipantsForm.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/events", eventId] });
+    
       toast({
         title: "Success",
         description: "Participants added to event",
       });
+    
+      // 🔔 Send notifications to added participants
+      const participantIds = variables.participantIds
+        .split(",")
+        .map(id => parseInt(id.trim()))
+        .filter(id => !isNaN(id));
+    
+      await Promise.all(
+        participantIds.map(async (userId) => {
+          try {
+            await apiRequest("POST", "/api/notifications", {
+              userId,
+              title: "You've been added to an event",
+              message: `You were just added to the event.`,
+              type: "event",
+              relatedEntityId: eventId,
+              relatedEntityType: "event",
+              link: `/events/${eventId}`,
+            });
+          } catch (err) {
+            console.error("Notification error for user", userId, err);
+          }
+        })
+      );
     },
     onError: (error) => {
       toast({
@@ -368,22 +414,20 @@ export default function EventDetail() {
       'step1Date', 'step2Date', 'step3Date', 'step4Date',
       'step5Date', 'step6Date', 'step7Date', 'step8Date'
     ];
-    
+
     const processedValues = { ...values };
-    
+
     // Process all step date fields
     for (const field of dateFields) {
       if (field in processedValues && (!processedValues[field] || processedValues[field] === '')) {
         processedValues[field] = null;
       }
     }
-    
     // Handle endDate special case
     const updatedValues = {
       ...processedValues,
       endDate: processedValues.isMultiDayEvent ? processedValues.endDate : null
     };
-    
     editEventMutation.mutate(updatedValues);
   };
 
@@ -391,25 +435,19 @@ export default function EventDetail() {
   const onConfirmEventComplete = () => {
     completeEventMutation.mutate();
   };
-  
   // Function to generate AI analysis of AARs
   const generateAIAnalysis = async () => {
     try {
       setAiAnalysisLoading(true);
-      
       // Get the unit ID from the event
       const unitId = event.unitId;
-      
       // Call the API endpoint for GreenBookAAR analysis
       const response = await apiRequest("GET", `/api/events/${eventId}/analysis`);
-      
       if (!response.ok) {
         throw new Error("Failed to generate analysis");
       }
-      
       const data = await response.json();
       setAiAnalysis(data);
-      
     } catch (error) {
       toast({
         title: "Analysis failed",
@@ -451,16 +489,14 @@ export default function EventDetail() {
     const stepNum = i + 1;
     const stepDateKey = `step${stepNum}Date` as keyof typeof event;
     const stepDate = event[stepDateKey] ? new Date(event[stepDateKey] as string) : undefined;
-    
     return {
       id: stepNum,
-      status: stepNum < event.step ? "complete" : 
-              stepNum === event.step ? "in-progress" : 
-              "pending",
+      status: stepNum < event.step ? "complete" :
+        stepNum === event.step ? "in-progress" :
+          "pending",
       date: stepDate,
     };
   });
-
   return (
     <div className="mx-auto max-w-5xl p-4 md:p-6 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -476,14 +512,14 @@ export default function EventDetail() {
           </p>
         </div>
         <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setShowEditDialog(true)}
           >
             Edit Event
           </Button>
           {event.step < 8 && (
-            <Button 
+            <Button
               onClick={() => setShowCompleteDialog(true)}
             >
               Mark as Complete
@@ -495,7 +531,7 @@ export default function EventDetail() {
             </Link>
           </Button>
           {(event.step === 8 || isPast(new Date(event.date))) && (
-            <Button 
+            <Button
               onClick={() => setShowRequestAARDialog(true)}
               variant="secondary"
             >
@@ -569,10 +605,10 @@ export default function EventDetail() {
                   ) : (
                     <span className="text-muted-foreground">No participants assigned</span>
                   )}
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="ml-2 h-6"
                     onClick={() => setShowAddParticipantsDialog(true)}
                   >
@@ -588,8 +624,10 @@ export default function EventDetail() {
                 <Shield className="h-4 w-4 mr-2 mt-1 text-muted-foreground" />
                 <div className="flex flex-wrap gap-2">
                   {event.participatingUnits && event.participatingUnits.length > 0 ? (
-                    event.participatingUnits.map((unitId) => {
-                      const unit = units?.find((u) => u.id === unitId);
+                    event.participatingUnits.map((unitId: number) => {
+                      // Ensure unitId is a number
+                      const numericUnitId = typeof unitId === "string" ? parseInt(unitId) : unitId;
+                      const unit = units?.find((u: Unit) => u.id === numericUnitId);
                       return (
                         <Badge key={unitId} variant="outline">
                           {unit?.name || `Unknown Unit ${unitId}`}
@@ -599,10 +637,10 @@ export default function EventDetail() {
                   ) : (
                     <span className="text-muted-foreground">No units assigned</span>
                   )}
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="ml-2 h-6"
                     onClick={() => setShowAddUnitDialog(true)}
                   >
@@ -633,12 +671,12 @@ export default function EventDetail() {
                   {aars.length} AAR{aars.length !== 1 ? 's' : ''} submitted for this event
                 </CardDescription>
               </div>
-              <Button 
+              <Button
                 onClick={() => setShowAIAnalysisDialog(true)}
                 variant="outline"
                 className="flex items-center gap-2"
               >
-                <FileText className="h-4 w-4" /> 
+                <FileText className="h-4 w-4" />
                 GreenBookAAR Analysis
               </Button>
             </CardHeader>
@@ -710,8 +748,8 @@ export default function EventDetail() {
                     <FormControl>
                       <div className="space-y-2">
                         <div className="flex flex-col relative">
-                          <Input 
-                            placeholder="Search for a user by name or rank" 
+                          <Input
+                            placeholder="Search for a user by name or rank"
                             className="w-full"
                             onChange={(e) => {
                               // Update search term for filtering users
@@ -719,7 +757,7 @@ export default function EventDetail() {
                             }}
                             value={userSearchTerm}
                           />
-                          
+
                           {userSearchTerm && userSearchTerm.length > 0 && (
                             <div className="absolute top-full z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md">
                               {users
@@ -735,7 +773,7 @@ export default function EventDetail() {
                                   // Check if user is already selected
                                   const currentIds = field.value ? field.value.split(',').map(id => id.trim()).filter(id => id) : [];
                                   const isSelected = currentIds.includes(user.id.toString());
-                                  
+
                                   return (
                                     <div
                                       key={user.id}
@@ -743,8 +781,8 @@ export default function EventDetail() {
                                       onClick={() => {
                                         if (!isSelected) {
                                           // Add the user to the selected list
-                                          const newValue = currentIds.length > 0 
-                                            ? `${field.value}, ${user.id}` 
+                                          const newValue = currentIds.length > 0
+                                            ? `${field.value}, ${user.id}`
                                             : user.id.toString();
                                           field.onChange(newValue);
                                           // Clear search after selection
@@ -757,7 +795,6 @@ export default function EventDetail() {
                                     </div>
                                   );
                                 })}
-                                
                               {users?.filter(user => {
                                 const searchLower = userSearchTerm.toLowerCase();
                                 return (
@@ -766,10 +803,10 @@ export default function EventDetail() {
                                   user.username?.toLowerCase().includes(searchLower)
                                 );
                               }).length === 0 && (
-                                <div className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm text-muted-foreground">
-                                  No users found
-                                </div>
-                              )}
+                                  <div className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm text-muted-foreground">
+                                    No users found
+                                  </div>
+                                )}
                             </div>
                           )}
                         </div>
@@ -783,8 +820,8 @@ export default function EventDetail() {
                             const userId = parseInt(id);
                             const user = users?.find(u => u.id === userId);
                             return (
-                              <Badge 
-                                key={id} 
+                              <Badge
+                                key={id}
                                 variant="secondary"
                                 className="flex items-center gap-1"
                               >
@@ -854,8 +891,8 @@ export default function EventDetail() {
                   <FormItem>
                     <Label>Unit</Label>
                     <FormControl>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <SelectTrigger>
@@ -949,7 +986,7 @@ export default function EventDetail() {
                     )}
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={editEventForm.control}
@@ -1005,7 +1042,7 @@ export default function EventDetail() {
                     )}
                   />
                 )}
-                
+
                 <FormField
                   control={editEventForm.control}
                   name="location"
@@ -1020,7 +1057,7 @@ export default function EventDetail() {
                   )}
                 />
               </div>
-                
+
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Mission & Objectives</h3>
                 <FormField
@@ -1036,7 +1073,7 @@ export default function EventDetail() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editEventForm.control}
                   name="missionStatement"
@@ -1050,7 +1087,7 @@ export default function EventDetail() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editEventForm.control}
                   name="conceptOfOperation"
@@ -1065,7 +1102,7 @@ export default function EventDetail() {
                   )}
                 />
               </div>
-                
+
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Resources</h3>
                 <FormField
@@ -1082,7 +1119,7 @@ export default function EventDetail() {
                   )}
                 />
               </div>
-                
+
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Training Step Timeline</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1146,7 +1183,6 @@ export default function EventDetail() {
                     />
                   </div>
                 </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-4 border p-4 rounded-md">
                     <h4 className="font-medium">Step 3: Recon the Site</h4>
@@ -1208,7 +1244,6 @@ export default function EventDetail() {
                     />
                   </div>
                 </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-4 border p-4 rounded-md">
                     <h4 className="font-medium">Step 5: Rehearse</h4>
@@ -1270,7 +1305,6 @@ export default function EventDetail() {
                     />
                   </div>
                 </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-4 border p-4 rounded-md">
                     <h4 className="font-medium">Step 7: Evaluate the Training</h4>
@@ -1333,7 +1367,6 @@ export default function EventDetail() {
                   </div>
                 </div>
               </div>
-                
               <FormField
                 control={editEventForm.control}
                 name="notifyParticipants"
@@ -1397,8 +1430,8 @@ export default function EventDetail() {
             >
               Cancel
             </Button>
-            <Button 
-              onClick={onConfirmEventComplete} 
+            <Button
+              onClick={onConfirmEventComplete}
               disabled={completeEventMutation.isPending}
               variant="default"
             >
@@ -1431,7 +1464,7 @@ export default function EventDetail() {
               AI-powered analysis of AARs for {event.title}
             </DialogDescription>
           </DialogHeader>
-          
+
           {aiAnalysisLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin mb-4" />
@@ -1452,17 +1485,17 @@ export default function EventDetail() {
                             <p className="text-sm text-muted-foreground mt-1">{trend.description}</p>
                           </div>
                           <Badge className={
-                            trend.severity === 'High' ? 'bg-red-100 text-red-800' : 
-                            trend.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-green-100 text-green-800'
+                            trend.severity === 'High' ? 'bg-red-100 text-red-800' :
+                              trend.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
                           }>
                             {trend.severity}
                           </Badge>
                         </div>
                         <div className="mt-2">
                           <div className="h-2 bg-secondary rounded-full mt-2">
-                            <div 
-                              className="h-2 bg-primary rounded-full" 
+                            <div
+                              className="h-2 bg-primary rounded-full"
                               style={{ width: `${Math.min(100, trend.frequency * 100)}%` }}
                             />
                           </div>
@@ -1490,9 +1523,9 @@ export default function EventDetail() {
                             <p className="text-sm text-muted-foreground mt-1">{point.description}</p>
                           </div>
                           <Badge className={
-                            point.impact === 'High' ? 'bg-red-100 text-red-800' : 
-                            point.impact === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-green-100 text-green-800'
+                            point.impact === 'High' ? 'bg-red-100 text-red-800' :
+                              point.impact === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
                           }>
                             {point.impact} Impact
                           </Badge>
@@ -1516,9 +1549,9 @@ export default function EventDetail() {
                             <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
                           </div>
                           <Badge className={
-                            rec.priority === 'High' ? 'bg-red-100 text-red-800' : 
-                            rec.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-green-100 text-green-800'
+                            rec.priority === 'High' ? 'bg-red-100 text-red-800' :
+                              rec.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
                           }>
                             {rec.priority} Priority
                           </Badge>
@@ -1531,8 +1564,8 @@ export default function EventDetail() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8">
-              <Button 
-                onClick={generateAIAnalysis} 
+              <Button
+                onClick={generateAIAnalysis}
                 className="mb-4"
               >
                 Generate Analysis
@@ -1542,7 +1575,6 @@ export default function EventDetail() {
               </p>
             </div>
           )}
-          
           <DialogFooter>
             <Button
               type="button"

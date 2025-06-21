@@ -92,21 +92,21 @@ const eventFormSchema = z.object({
   step8Date: z.date().optional(),
   step1Notes: z.string().optional(),
   step2Notes: z.string().optional(),
-  step3Notes: z.string().optional(), 
+  step3Notes: z.string().optional(),
   step4Notes: z.string().optional(),
   step5Notes: z.string().optional(),
   step6Notes: z.string().optional(),
   step7Notes: z.string().optional(),
   step8Notes: z.string().optional(),
 })
-.refine(data => !data.isMultiDayEvent || (data.isMultiDayEvent && data.endDate), {
-  message: "End date is required for multi-day events",
-  path: ["endDate"],
-})
-.refine(data => !data.isMultiDayEvent || (data.isMultiDayEvent && data.endDate && data.endDate >= data.executionDate), {
-  message: "End date must be after or the same as the start date",
-  path: ["endDate"],
-});
+  .refine(data => !data.isMultiDayEvent || (data.isMultiDayEvent && data.endDate), {
+    message: "End date is required for multi-day events",
+    path: ["endDate"],
+  })
+  .refine(data => !data.isMultiDayEvent || (data.isMultiDayEvent && data.endDate && data.endDate >= data.executionDate), {
+    message: "End date must be after or the same as the start date",
+    path: ["endDate"],
+  });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
@@ -117,13 +117,13 @@ export default function EventForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [searchParticipant, setSearchParticipant] = useState("");
   const [searchUnit, setSearchUnit] = useState("");
-  const [selectedParticipants, setSelectedParticipants] = useState<{id: number, name: string}[]>([]);
-  const [selectedUnits, setSelectedUnits] = useState<{id: number, name: string, unitLevel?: string}[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<{ id: number, name: string }[]>([]);
+  const [selectedUnits, setSelectedUnits] = useState<{ id: number, name: string, unitLevel?: string }[]>([]);
   const [showParticipantResults, setShowParticipantResults] = useState(false);
   const [showUnitResults, setShowUnitResults] = useState(false);
 
 
-  
+
 
   // Get default values for the form
   const defaultValues: Partial<EventFormValues> = {
@@ -155,21 +155,21 @@ export default function EventForm() {
     resolver: zodResolver(eventFormSchema),
     defaultValues,
   });
-  
+
   // Set up effect to auto-populate Step 6 date with execution date
   useEffect(() => {
     const executionDate = form.getValues("executionDate");
     if (executionDate) {
       form.setValue("step6Date", executionDate);
     }
-    
+
     // Set up subscription to execution date changes
     const subscription = form.watch((value, { name }) => {
       if (name === "executionDate" && value.executionDate) {
         form.setValue("step6Date", value.executionDate);
       }
     });
-    
+
     return () => subscription.unsubscribe();
   }, [form]);
 
@@ -178,45 +178,45 @@ export default function EventForm() {
     queryKey: ['/api/users'],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-  
+
   // Fetch units for autocomplete - get accessible units to ensure we get them all
   const { data: unitsData = [] } = useQuery({
     queryKey: ['/api/hierarchy/accessible-units'],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-  
+
   // Filter users based on search text
-  const filteredUsers = searchParticipant 
-    ? (usersData as any[]).filter((user: any) => 
-        (user.name && user.name.toLowerCase().includes(searchParticipant.toLowerCase())) ||
-        (user.username && user.username.toLowerCase().includes(searchParticipant.toLowerCase())) ||
-        (user.rank && user.rank.toLowerCase().includes(searchParticipant.toLowerCase()))
-      ).slice(0, 5) // Limit to 5 suggestions
+  const filteredUsers = searchParticipant
+    ? (usersData as any[]).filter((user: any) =>
+      (user.name && user.name.toLowerCase().includes(searchParticipant.toLowerCase())) ||
+      (user.username && user.username.toLowerCase().includes(searchParticipant.toLowerCase())) ||
+      (user.rank && user.rank.toLowerCase().includes(searchParticipant.toLowerCase()))
+    ).slice(0, 5) // Limit to 5 suggestions
     : [];
-    
+
   // Helper function to find parent unit by ID
   const findParentUnit = (parentId: number | null) => {
     if (!parentId || !unitsData || !Array.isArray(unitsData)) return null;
     return unitsData.find((unit: any) => unit.id === parentId);
   };
-  
+
   // Add full unit hierarchical name (with parent units)
   const unitsWithHierarchy = Array.isArray(unitsData) ? unitsData.map((unit: any) => {
     let parentUnit = findParentUnit(unit.parentId);
     let grandparentUnit = parentUnit ? findParentUnit(parentUnit.parentId) : null;
-    
+
     let fullName = unit.name;
-    
+
     if (parentUnit) {
       fullName += ` (${parentUnit.unitLevel}: ${parentUnit.name}`;
-      
+
       if (grandparentUnit) {
         fullName += `, ${grandparentUnit.unitLevel}: ${grandparentUnit.name}`;
       }
-      
+
       fullName += ')';
     }
-    
+
     return {
       ...unit,
       fullName
@@ -226,63 +226,63 @@ export default function EventForm() {
   // Filter units based on search text
   const filteredUnits = searchUnit && unitsWithHierarchy && Array.isArray(unitsWithHierarchy)
     ? unitsWithHierarchy.filter((unit: any) => {
-        return (
-          (unit.fullName && unit.fullName.toLowerCase().includes(searchUnit.toLowerCase())) ||
-          (unit.name && unit.name.toLowerCase().includes(searchUnit.toLowerCase())) ||
-          (unit.unitLevel && unit.unitLevel.toLowerCase().includes(searchUnit.toLowerCase()))
-        );
-      }).slice(0, 5) // Limit to 5 suggestions
+      return (
+        (unit.fullName && unit.fullName.toLowerCase().includes(searchUnit.toLowerCase())) ||
+        (unit.name && unit.name.toLowerCase().includes(searchUnit.toLowerCase())) ||
+        (unit.unitLevel && unit.unitLevel.toLowerCase().includes(searchUnit.toLowerCase()))
+      );
+    }).slice(0, 5) // Limit to 5 suggestions
     : [];
-    
+
   // Add participant to selected list
   const addParticipant = (participant: any) => {
     if (!selectedParticipants.find(p => p.id === participant.id)) {
-      const newParticipants = [...selectedParticipants, { 
-        id: participant.id, 
+      const newParticipants = [...selectedParticipants, {
+        id: participant.id,
         name: `${participant.rank || ''} ${participant.name}`.trim()
       }];
-      
+
       setSelectedParticipants(newParticipants);
-      
+
       // Update the form field with comma-separated IDs
       form.setValue('participants', newParticipants.map(p => p.id).join(','));
     }
     setSearchParticipant('');
     setShowParticipantResults(false);
   };
-  
+
   // Add unit to selected list
   const addUnit = (unit: any) => {
     console.log("Adding unit:", unit);
     if (!selectedUnits.find(u => u.id === unit.id)) {
-      const newUnits = [...selectedUnits, { 
-        id: unit.id, 
+      const newUnits = [...selectedUnits, {
+        id: unit.id,
         name: unit.name,
         unitLevel: unit.unitLevel
       }];
       setSelectedUnits(newUnits);
-      
+
       // Update the form field with comma-separated IDs
       form.setValue('participatingUnits', newUnits.map(u => u.id).join(','));
     }
     setSearchUnit('');
     setShowUnitResults(false);
   };
-  
+
   // Remove participant from selected list
   const removeParticipant = (id: number) => {
     const updated = selectedParticipants.filter(p => p.id !== id);
     setSelectedParticipants(updated);
-    
+
     // Update the form field
     form.setValue('participants', updated.map(p => p.id).join(','));
   };
-  
+
   // Remove unit from selected list
   const removeUnit = (id: number) => {
     const updated = selectedUnits.filter(u => u.id !== id);
     setSelectedUnits(updated);
-    
+
     // Update the form field
     form.setValue('participatingUnits', updated.map(u => u.id).join(','));
   };
@@ -344,7 +344,7 @@ export default function EventForm() {
         participants: participantIds, // This should be an array of numbers
         participatingUnits: unitIdArray, // This should be an array of numbers
         notifyParticipants: values.notifyParticipants,
-        eventType: values.eventType || "training", 
+        eventType: values.eventType || "training",
         trainingEchelon: values.trainingEchelon || "squad",
         trainingElements: values.trainingElements || "",
         planningNotes: values.planningNotes || "",
@@ -361,7 +361,7 @@ export default function EventForm() {
         ...stepDates,
         // Attachments will be handled separately in a multipart request if needed
       };
-      
+
       console.log("Submitting event data:", eventData);
 
       try {
@@ -370,10 +370,10 @@ export default function EventForm() {
           '/api/events',
           eventData
         );
-        
+
         // Invalidate the events query to refresh the list
         queryClient.invalidateQueries({ queryKey: ['/api/events'] });
-        
+
         return response;
       } catch (error) {
         console.error("Error creating event:", error);
@@ -385,7 +385,7 @@ export default function EventForm() {
         title: "Event created successfully",
         description: "Your event has been created and participants have been notified.",
       });
-      
+
       // Navigate to the events page
       navigate("/events");
     },
@@ -413,18 +413,18 @@ export default function EventForm() {
   };
 
   return (
-    <Card className="max-w-5xl mx-auto">
+    <Card className="max-w-3xl mx-auto">
       <CardHeader>
         <h2 className="text-2xl font-bold">Create New Event</h2>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            
+
             {/* Basic Event Information */}
             <div className="space-y-6">
               <h3 className="text-lg font-medium">Basic Event Information</h3>
-              
+
               <FormField
                 control={form.control}
                 name="title"
@@ -499,15 +499,15 @@ export default function EventForm() {
                         </PopoverContent>
                       </Popover>
                       <FormDescription>
-                        {form.watch("isMultiDayEvent") 
-                          ? "The date when the event begins" 
+                        {form.watch("isMultiDayEvent")
+                          ? "The date when the event begins"
                           : "The date when the event will be executed"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 {form.watch("isMultiDayEvent") && (
                   <FormField
                     control={form.control}
@@ -552,7 +552,7 @@ export default function EventForm() {
                     )}
                   />
                 )}
-                
+
                 <FormField
                   control={form.control}
                   name="receivedDate"
@@ -675,7 +675,7 @@ export default function EventForm() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="trainingElements"
@@ -683,9 +683,9 @@ export default function EventForm() {
                     <FormItem>
                       <FormLabel>Training Elements</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Specific elements being trained (e.g. 1st and 3rd Squad)" 
-                          {...field} 
+                        <Input
+                          placeholder="Specific elements being trained (e.g. 1st and 3rd Squad)"
+                          {...field}
                         />
                       </FormControl>
                       <FormDescription>
@@ -701,7 +701,7 @@ export default function EventForm() {
             {/* Event Details */}
             <div className="space-y-6">
               <h3 className="text-lg font-medium">Event Details</h3>
-              
+
               <FormField
                 control={form.control}
                 name="objectives"
@@ -785,10 +785,10 @@ export default function EventForm() {
             <div className="space-y-6">
               <h3 className="text-lg font-medium">8-Step Training Model</h3>
               <p className="text-sm text-muted-foreground">
-                The 8-Step Training Model timeline helps you plan and track each phase of the training event. 
+                The 8-Step Training Model timeline helps you plan and track each phase of the training event.
                 You can set target dates and add notes for each step.
               </p>
-              
+
               <Accordion type="multiple" className="w-full">
                 {trainingSteps.map((step) => (
                   <AccordionItem key={step.id} value={`step-${step.id}`}>
@@ -835,7 +835,7 @@ export default function EventForm() {
                             </FormItem>
                           )}
                         />
-                        
+
                         <FormField
                           control={form.control}
                           name={`step${step.id}Notes` as any}
@@ -859,11 +859,11 @@ export default function EventForm() {
                 ))}
               </Accordion>
             </div>
-            
+
             {/* Planning Notes and Attachments */}
             <div className="space-y-6">
               <h3 className="text-lg font-medium">Additional Planning Notes</h3>
-              
+
               <FormField
                 control={form.control}
                 name="planningNotes"
@@ -899,7 +899,7 @@ export default function EventForm() {
                   <p className="text-sm text-muted-foreground mt-2">
                     Upload OPORD, maps, diagrams or any relevant documents (Max 5MB each)
                   </p>
-                  
+
                   {files.length > 0 && (
                     <div className="mt-4 w-full">
                       <h5 className="text-sm font-medium mb-2">Selected Files ({files.length})</h5>
@@ -907,9 +907,9 @@ export default function EventForm() {
                         {files.map((file, index) => (
                           <li key={index} className="flex items-center justify-between p-2 bg-background rounded border">
                             <span className="text-sm truncate max-w-[300px]">{file.name}</span>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => setFiles(files.filter((_, i) => i !== index))}
                             >
                               <X className="h-4 w-4" />
@@ -922,11 +922,11 @@ export default function EventForm() {
                 </div>
               </div>
             </div>
-            
+
             {/* Participants and Units */}
             <div className="space-y-6">
               <h3 className="text-lg font-medium">Participants and Units</h3>
-              
+
               {/* Participant autocomplete */}
               <div className="space-y-4">
                 <FormLabel>Participants</FormLabel>
@@ -951,14 +951,14 @@ export default function EventForm() {
                     />
                     <UserPlus className="absolute right-2.5 h-4 w-4 text-muted-foreground" />
                   </div>
-                  
+
                   {showParticipantResults && searchParticipant && (
                     <div className="absolute z-10 mt-1 w-full bg-background border rounded-md shadow-md">
                       {filteredUsers.length > 0 ? (
                         <ul className="py-1 max-h-60 overflow-auto">
                           {filteredUsers.map((user: any) => (
-                            <li 
-                              key={user.id} 
+                            <li
+                              key={user.id}
                               className="px-4 py-2 hover:bg-accent cursor-pointer flex items-center"
                               onClick={() => addParticipant(user)}
                             >
@@ -976,12 +976,12 @@ export default function EventForm() {
                     </div>
                   )}
                 </div>
-                
+
                 {selectedParticipants.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {selectedParticipants.map((participant) => (
-                      <Badge 
-                        key={participant.id} 
+                      <Badge
+                        key={participant.id}
                         variant="secondary"
                         className="flex items-center gap-1"
                       >
@@ -997,17 +997,17 @@ export default function EventForm() {
                     ))}
                   </div>
                 )}
-                
+
                 <FormDescription>
                   Search and select participants for this event
                 </FormDescription>
-                
-                <input 
+
+                <input
                   type="hidden"
                   {...form.register('participants')}
                 />
               </div>
-              
+
               {/* Units autocomplete */}
               <div className="space-y-4">
                 <FormLabel>Participating Units</FormLabel>
@@ -1032,14 +1032,14 @@ export default function EventForm() {
                     />
                     <Users className="absolute right-2.5 h-4 w-4 text-muted-foreground" />
                   </div>
-                  
+
                   {showUnitResults && searchUnit && (
                     <div className="absolute z-10 mt-1 w-full bg-background border rounded-md shadow-md">
                       {filteredUnits.length > 0 ? (
                         <ul className="py-1 max-h-60 overflow-auto">
                           {filteredUnits.map((unit: any) => (
-                            <li 
-                              key={unit.id} 
+                            <li
+                              key={unit.id}
                               className="px-4 py-2 hover:bg-accent cursor-pointer flex items-center"
                               onClick={() => addUnit(unit)}
                             >
@@ -1058,12 +1058,12 @@ export default function EventForm() {
                     </div>
                   )}
                 </div>
-                
+
                 {selectedUnits.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {selectedUnits.map((unit) => (
-                      <Badge 
-                        key={unit.id} 
+                      <Badge
+                        key={unit.id}
                         variant="secondary"
                         className="flex items-center gap-1"
                       >
@@ -1079,12 +1079,12 @@ export default function EventForm() {
                     ))}
                   </div>
                 )}
-                
+
                 <FormDescription>
                   Search and select units participating in this event
                 </FormDescription>
-                
-                <input 
+
+                <input
                   type="hidden"
                   {...form.register('participatingUnits')}
                 />

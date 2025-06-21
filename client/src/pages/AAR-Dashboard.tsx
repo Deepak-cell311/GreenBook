@@ -340,7 +340,7 @@ export default function AARDashboard() {
   
   // Get available unit levels from accessible units
   const unitLevels = accessibleUnits
-    ? [...new Set(accessibleUnits.map(unit => unit.unitLevel))]
+    ? Array.from(new Set(accessibleUnits.map(unit => unit.unitLevel)))
     : [];
     
   // Function to filter and process AAR items for display
@@ -607,6 +607,10 @@ export default function AARDashboard() {
           sortedAAREvents.map(([eventId, eventAARs]) => {
             const event = eventsMap[Number(eventId)];
             const eventUnit = unitsMap[event.unitId];
+
+            console.log("Event in aar dashboard: ", event)
+            console.log("Event unit in event unit: ", eventUnit);
+            
             
             return (
               <Card key={eventId} className="overflow-hidden">

@@ -81,7 +81,7 @@ function CommandChainNode({
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              {role || user.role}
+              {role === "Commander" ? "Unit Admin" : role || user.role === "Commander" ? "Unit Admin" : user.role}
             </p>
           </div>
           <UserIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -321,7 +321,7 @@ export default function UserChainOfCommand({ userId }: UserChainOfCommandProps) 
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Badge variant="outline" className="bg-background">
-                  {targetUser.role}
+                  {targetUser.role === "Commander" ? "Unit Admin" : targetUser.role}
                 </Badge>
                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
                 <Badge variant="outline" className="bg-background">

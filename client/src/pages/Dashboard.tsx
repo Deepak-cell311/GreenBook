@@ -259,6 +259,7 @@ export default function Dashboard() {
           linkHref="/aars"
         />
 
+        {/* Steps count issue of pending arrs */}
         <StatCard
           title="Pending AARs"
           value={
