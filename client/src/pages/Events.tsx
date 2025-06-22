@@ -124,7 +124,7 @@ export default function Events() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-2">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -238,7 +238,7 @@ export default function Events() {
                         <p className="text-sm mt-1 line-clamp-2">{event.objectives}</p>
                       </div>
 
-                      <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
+                      <div className="flex justify-between items-center mt-4 pt-3 border-t border-border flex-wrap gap-5">
                         <Link href={`/events/${event.id}`}>
                           <Button variant="outline" size="sm">View Details</Button>
                         </Link>
