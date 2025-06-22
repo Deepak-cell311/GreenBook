@@ -409,7 +409,7 @@ export default function AARDashboard() {
   
   return (
     <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-around items-center mb-6">
         <h1 className="text-3xl font-bold">After Action Reviews</h1>
         <Link href="/submit-aar">
           <Button>
@@ -615,11 +615,11 @@ export default function AARDashboard() {
             return (
               <Card key={eventId} className="overflow-hidden">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start flex-wrap">
                     <div>
                       <CardTitle className="text-xl">{event.title}</CardTitle>
                       <CardDescription>
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex gap-2 mt-1 flex-wrap">
                           <Badge variant="outline" className="flex items-center">
                             <Calendar className="mr-1 h-3 w-3" />
                             {formatDate(event.date)}
@@ -639,7 +639,7 @@ export default function AARDashboard() {
                         </div>
                       </CardDescription>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-auto mt-4">
                       <Link href={`/events/${event.id}`}>
                         <Button variant="outline" size="sm">View Event</Button>
                       </Link>

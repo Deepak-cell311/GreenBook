@@ -75,7 +75,7 @@ export default function Events() {
         title: "Event deleted",
         description: "The event has been deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/units/${user?.unitId}/events`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/events'] });
     },
     onError: (error: any) => {
       toast({
