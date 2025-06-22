@@ -199,7 +199,7 @@ export default function Dashboard() {
   return (
     <div className="p-2">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 m-4">
         <div>
           <h1 className="text-2xl font-condensed font-bold text-gray-900 sm:text-3xl">
             Dashboard
