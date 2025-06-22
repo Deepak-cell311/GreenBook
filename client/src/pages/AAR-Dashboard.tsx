@@ -409,7 +409,7 @@ export default function AARDashboard() {
   
   return (
     <div className="container mx-auto py-6">
-      <div className="flex justify-around items-center mb-6">
+      <div className="flex justify-around md:justify-between mx-4 items-center mb-6">
         <h1 className="text-3xl font-bold">After Action Reviews</h1>
         <Link href="/submit-aar">
           <Button>
@@ -639,7 +639,7 @@ export default function AARDashboard() {
                         </div>
                       </CardDescription>
                     </div>
-                    <div className="flex gap-2 flex-auto mt-4">
+                    <div className="flex gap-2 flex-auto md:flex-none mt-4">
                       <Link href={`/events/${event.id}`}>
                         <Button variant="outline" size="sm">View Event</Button>
                       </Link>
