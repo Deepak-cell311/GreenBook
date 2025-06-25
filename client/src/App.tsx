@@ -162,7 +162,7 @@ function Router() {
       <Route path="/aars">
         <ProtectedRoute>
           <Layout>
-            <AARDashboard />
+            <AARs />
           </Layout>
         </ProtectedRoute>
       </Route>
@@ -175,6 +175,14 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/submit-aar">
+        <ProtectedRoute>
+          <Layout>
+            <Events />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/submit-aar/:eventId">
         <ProtectedRoute>
           <Layout>
@@ -182,6 +190,7 @@ function Router() {
           </Layout>
         </ProtectedRoute>
       </Route>
+
 
       <Route path="/units">
         <ProtectedRoute>

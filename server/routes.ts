@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import express from "express";
 import { z } from "zod";
-import { insertUserSchema, insertUnitSchema, insertEventSchema, insertAARSchema, TrainingSteps, UnitLevels, MilitaryRoles, MilitaryHierarchy, User } from "@shared/schema";
+import { insertUserSchema, insertUnitSchema, insertEventSchema, insertAARSchema, TrainingSteps, UnitLevels, MilitaryRoles, MilitaryHierarchy, User, AAR, Event } from "@shared/schema";
 import { getAccessibleUnits, getAccessibleUsers } from "./lib/permissions";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
@@ -1443,16 +1443,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accessibleUnits = await getAccessibleUnits(user.id);
       const accessibleUnitIds = accessibleUnits.map(unit => unit.id);
 
-      // If the user doesn't have access to any units, return an empty array
-      if (accessibleUnitIds.length === 0) {
-        return res.json([]);
-      }
+      // Get all events to map event titles to AARs
+      const allEvents = await storage.getAllEvents();
+      const eventMap = new Map(allEvents.map(event => [event.id, event.title]));
 
       // Get AARs for all accessible units
-      const allAARs = [];
-      for (const unitId of accessibleUnitIds) {
-        const unitAARs = await storage.getAARsByUnit(unitId);
-        allAARs.push(...unitAARs);
+      const allAARs: AAR[] = [];
+      if (accessibleUnitIds.length > 0) {
+        for (const unitId of accessibleUnitIds) {
+          const unitAARs = await storage.getAARsByUnit(unitId);
+          allAARs.push(...unitAARs);
+        }
       }
 
       // Also get AARs for events the user has participated in
@@ -1460,13 +1461,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const eventIds = participatedEvents.map(event => event.id);
 
       // Get AARs for these events if they're not already included
-      for (const eventId of eventIds) {
-        const eventAARs = await storage.getAARsByEvent(eventId);
+      if (eventIds.length > 0) {
+        for (const eventId of eventIds) {
+          const eventAARs = await storage.getAARsByEvent(eventId);
 
-        // Only add AARs that aren't already in the list
-        for (const aar of eventAARs) {
-          if (!allAARs.some(existingAAR => existingAAR.id === aar.id)) {
-            allAARs.push(aar);
+          // Only add AARs that aren't already in the list
+          for (const aar of eventAARs) {
+            if (!allAARs.some(existingAAR => existingAAR.id === aar.id)) {
+              allAARs.push(aar);
+            }
           }
         }
       }
@@ -1479,9 +1482,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Remove any duplicate AARs and return
+      // Remove any duplicate AARs
       const uniqueAARs = Array.from(new Map(allAARs.map(aar => [aar.id, aar])).values());
-      return res.json(uniqueAARs);
+
+      // Add event titles to AARs
+      const aarsWithEventTitles = uniqueAARs.map(aar => ({
+        ...aar,
+        eventTitle: eventMap.get(aar.eventId) || 'Unknown Event'
+      }));
+
+      return res.json(aarsWithEventTitles);
     } catch (error) {
       console.error('Error fetching accessible AARs:', error);
       return res.status(500).json({ message: 'Failed to fetch AARs' });

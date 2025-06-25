@@ -29,6 +29,7 @@ export default function AARsAdmin() {
   interface AAR {
     id: number;
     eventId: number;
+    eventTitle?: string;
     unitId: number;
     createdBy: number;
     createdAt: string;
@@ -136,8 +137,8 @@ export default function AARsAdmin() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Event ID</TableHead>
                     <TableHead>Unit ID</TableHead>
+                    <TableHead>Event Name</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead>Date Created</TableHead>
                     <TableHead>Item Count</TableHead>
@@ -147,13 +148,14 @@ export default function AARsAdmin() {
                 <TableBody>
                   {aars.map((aar: AAR) => (
                     <TableRow key={aar.id}>
+                      <TableCell>{aar.unitId}</TableCell>
                       <TableCell>
                         <Link href={`/events/${aar.eventId}`} className="text-blue-600 hover:underline flex items-center">
                           <FileText className="mr-1 h-4 w-4" /> 
-                          Event #{aar.eventId}
+                          {aar.eventTitle || `Event #${aar.eventId}`}
                         </Link>
                       </TableCell>
-                      <TableCell>{aar.unitId}</TableCell>
+                      
                       <TableCell>
                         {aar.createdBy === user?.id ? "You" : `User #${aar.createdBy}`}
                       </TableCell>

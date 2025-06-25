@@ -1,11 +1,11 @@
 import { useAuth } from "@/lib/auth-provider";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { 
-  Calendar, 
-  FileText, 
-  Users, 
-  MoreHorizontal, 
+import {
+  Calendar,
+  FileText,
+  Users,
+  MoreHorizontal,
   Loader2,
   Download,
   Printer,
@@ -14,10 +14,10 @@ import {
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
@@ -31,12 +31,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 
 export default function AARs() {
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  
+  const [location] = useLocation();
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("q") || "";
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get("q") || "";
+    setSearchQuery(query);
+  }, [window.location.search]);
+
   // Get AARs for the unit
   const { data: aars = [], isLoading: isAARsLoading } = useQuery({
     queryKey: ["/api/units", user?.unitId, "aars"],
@@ -84,30 +95,30 @@ export default function AARs() {
     // Make sure we have a valid event with its data
     const event = events.find((e: any) => e.id === aar.eventId);
     const creator = users.find((u: any) => u.id === aar.createdBy);
-    
+
     // Get planned and actual outcomes from AAR metadata
-    const metadataItem = aar.sustainItems && aar.sustainItems.find((item: any) => 
+    const metadataItem = aar.sustainItems && aar.sustainItems.find((item: any) =>
       item.tags && Array.isArray(item.tags) && item.tags.includes('aar_metadata')
     );
-    
+
     let plannedOutcome = null;
     let actualOutcome = null;
-    
+
     if (metadataItem && metadataItem.text) {
       const plannedMatch = /Planned outcome: (.*?)(\n|$)/.exec(metadataItem.text);
       const actualMatch = /Actual outcome: (.*?)(\n|$)/.exec(metadataItem.text);
-      
+
       plannedOutcome = plannedMatch && plannedMatch[1] ? plannedMatch[1] : null;
       actualOutcome = actualMatch && actualMatch[1] ? actualMatch[1] : null;
     }
-    
+
     // Log the event data to help troubleshoot
     if (!event) {
       console.log(`Event not found for AAR ${aar.id}, eventId: ${aar.eventId}`);
     } else {
       console.log(`Found event for AAR ${aar.id}:`, event.title);
     }
-    
+
     return {
       ...aar,
       event,
@@ -117,24 +128,28 @@ export default function AARs() {
       creatorName: creator ? `${creator.rank} ${creator.name}` : "Unknown",
       participantCount: event?.participants?.length || 0,
       plannedOutcome,
-      actualOutcome
+      actualOutcome,
+      eventStep: event?.step || 0 // Add event step for banner logic
     };
   });
 
   // Filter AARs based on search query
   const filteredAARs = formattedAARs.filter((aar: any) => {
     if (!searchQuery) return true;
-    
     const searchTerms = searchQuery.toLowerCase().split(" ");
     const searchableText = `
-      ${aar.eventTitle.toLowerCase()} 
-      ${aar.location.toLowerCase()} 
-      ${aar.creatorName.toLowerCase()}
-      ${Array.isArray(aar.sustainItems) ? aar.sustainItems.map((item: any) => typeof item === 'object' ? item.text : item).join(" ").toLowerCase() : ''}
-      ${Array.isArray(aar.improveItems) ? aar.improveItems.map((item: any) => typeof item === 'object' ? item.text : item).join(" ").toLowerCase() : ''}
-      ${Array.isArray(aar.actionItems) ? aar.actionItems.map((item: any) => typeof item === 'object' ? item.text : item).join(" ").toLowerCase() : ''}
-    `;
-    
+          ${aar.eventTitle?.toLowerCase() || ""}
+          ${aar.location?.toLowerCase() || ""}
+          ${aar.creatorName?.toLowerCase() || ""}
+          ${Array.isArray(aar.sustainItems) ? aar.sustainItems.map((item: any) => typeof item === 'object' ? item.text : item).join(" ").toLowerCase() : ''}
+          ${Array.isArray(aar.improveItems) ? aar.improveItems.map((item: any) => typeof item === 'object' ? item.text : item).join(" ").toLowerCase() : ''}
+          ${Array.isArray(aar.actionItems) ? aar.actionItems.map((item: any) => typeof item === 'object' ? item.text : item).join(" ").toLowerCase() : ''}
+        `;
+
+    console.log("Search Query:", searchQuery);
+    console.log("Search Terms:", searchTerms);
+    console.log("Searchable Text:", searchableText);
+
     return searchTerms.every(term => searchableText.includes(term));
   });
 
@@ -188,8 +203,8 @@ export default function AARs() {
             <FileText className="h-12 w-12 text-muted-foreground/60 mb-4" />
             <h3 className="text-lg font-medium">No AARs found</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {searchQuery 
-                ? "Try adjusting your search terms."
+              {searchQuery
+                ? `No AARs match your search for "${searchQuery}".`
                 : "There are no AARs for your unit yet."}
             </p>
           </CardContent>
@@ -201,10 +216,22 @@ export default function AARs() {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle>{aar.eventTitle}</CardTitle>
+                    <CardTitle>
+                      {aar.event
+                        ? aar.event.title
+                        : <span className="text-destructive font-semibold">Event Not Found</span>
+                      }
+                    </CardTitle>
                     <CardDescription>
                       Created by {aar.creatorName} on {format(new Date(aar.createdAt), 'MMM d, yyyy')}
                     </CardDescription>
+
+                    {/* Banner for events not ready for AAR submission (step < 6) */}
+                    {aar.eventStep < 6 && (
+                      <div className="bg-yellow-100 text-yellow-800 p-2 rounded mt-2 font-semibold text-center">
+                        This event is not ready for AAR submission until after execution (step 6).
+                      </div>
+                    )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -248,7 +275,7 @@ export default function AARs() {
                     AAR
                   </Badge>
                 </div>
-                
+
                 {/* Planned and Actual Outcomes */}
                 {(aar.plannedOutcome || aar.actualOutcome) && (
                   <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -286,7 +313,7 @@ export default function AARs() {
                       )}
                     </ul>
                   </div>
-                  
+
                   <div>
                     <h4 className="text-sm font-semibold mb-2">Improve</h4>
                     <ul className="list-disc list-inside text-sm space-y-1">
@@ -302,7 +329,7 @@ export default function AARs() {
                       )}
                     </ul>
                   </div>
-                  
+
                   <div>
                     <h4 className="text-sm font-semibold mb-2">Action Items</h4>
                     <ul className="list-disc list-inside text-sm space-y-1">

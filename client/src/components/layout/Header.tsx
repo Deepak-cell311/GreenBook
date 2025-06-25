@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/lib/auth-provider";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,14 +24,23 @@ import NotificationDropdown from "./NotificationDropdown";
 export default function Header() {
   const { user, logout } = useAuth();
   const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, setLocation] = useLocation();
 
   const userInitials = user?.name
     ? user.name
-        .split(" ")
-        .map((name) => name[0])
-        .join("")
+      .split(" ")
+      .map((name) => name[0])
+      .join("")
     : "U";
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setLocation(`/aars?q=${encodeURIComponent(searchQuery.trim())}`);
+      setShowSearch(false);
+    }
+  };
   return (
     <header className="sticky top-0 z-40 h-16 bg-white shadow">
       <div className="flex h-full items-center justify-between px-4">
@@ -53,20 +62,23 @@ export default function Header() {
         {/* Search */}
         <div className="flex items-center flex-1 lg:max-w-lg ml-4 md:ml-0">
           {showSearch ? (
-            <div className="relative w-full">
+            <form onSubmit={handleSearch} className="relative w-full">
               <Input
                 type="search"
                 placeholder="Search AARs..."
                 className="pr-10"
                 autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <button
+                type="button"
                 className="absolute right-2 top-2.5"
                 onClick={() => setShowSearch(false)}
               >
                 <X className="h-5 w-5 text-muted-foreground" />
               </button>
-            </div>
+            </form>
           ) : (
             <Button
               variant="ghost"
@@ -79,7 +91,7 @@ export default function Header() {
             </Button>
           )}
           <div className="hidden md:flex md:flex-1">
-            <div className="relative w-full max-w-lg">
+            <form onSubmit={handleSearch} className="relative w-full max-w-lg">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-muted-foreground" />
               </div>
@@ -87,8 +99,10 @@ export default function Header() {
                 type="search"
                 placeholder="Search AARs..."
                 className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-            </div>
+            </form>
           </div>
         </div>
 

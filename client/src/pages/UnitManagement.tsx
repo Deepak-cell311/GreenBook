@@ -306,7 +306,7 @@ export default function UnitManagement() {
       </Helmet>
       
       <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-wrap mx-4 justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Unit Management</h1>
             <p className="text-muted-foreground mt-1">
@@ -315,7 +315,7 @@ export default function UnitManagement() {
           </div>
           <Dialog open={showCreateUnitDialog} onOpenChange={setShowCreateUnitDialog}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="mt-2">
                 <PlusCircle className="mr-2 h-4 w-4" /> Create Unit
               </Button>
             </DialogTrigger>
@@ -612,7 +612,7 @@ export default function UnitManagement() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="text-xs text-muted-foreground">
-                                    {member.role}
+                                    {member.role === "Commander" ? "Unit admin" : member.role}
                                   </div>
                                   <Button 
                                     variant="ghost" 

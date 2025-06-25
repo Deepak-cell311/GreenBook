@@ -91,7 +91,7 @@ function UnitNode({
           {leader && (
             <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <Shield className="h-3 w-3" /> 
-              {leader.name} ({leader.rank}) - {leader.role}
+              {leader.name} ({leader.rank}) - {leader.role === "Commander" ? "Unit admin" : leader.role}
             </div>
           )}
         </div>

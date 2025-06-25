@@ -10,13 +10,18 @@ interface VeniceInsightsProps {
 
 export default function VeniceInsights({ analysis }: VeniceInsightsProps) {
   // Check if we have meaningful analysis data
-  const hasData = analysis.trends.length > 0 && 
-                  analysis.frictionPoints.length > 0 && 
-                  analysis.recommendations.length > 0;
-                  
+  const hasData = Array.isArray(analysis.trends) && analysis.trends.length > 0 &&
+  Array.isArray(analysis.frictionPoints) && analysis.frictionPoints.length > 0 &&
+  Array.isArray(analysis.recommendations) && analysis.recommendations.length > 0;
+
   // Special case: Check if this is a "not enough data" message
-  const notEnoughData = analysis.trends.length === 1 && 
-                        analysis.trends[0].category === "Insufficient Data";
+  const notEnoughData = Array.isArray(analysis.trends) &&
+  analysis.trends.length === 1 &&
+  analysis.trends[0].category === "Insufficient Data";
+
+  const trends = Array.isArray(analysis.trends) ? analysis.trends : [];
+  const frictionPoints = Array.isArray(analysis.frictionPoints) ? analysis.frictionPoints : [];
+  const recommendations = Array.isArray(analysis.recommendations) ? analysis.recommendations : [];
 
   return (
     <Card>
@@ -52,7 +57,7 @@ export default function VeniceInsights({ analysis }: VeniceInsightsProps) {
         ) : (
           <div className="space-y-6">
             {/* Trends */}
-            {analysis.trends.map((trend, idx) => (
+            {trends.map((trend, idx) => (
               <div key={idx} className="insight-card info">
                 <div className="flex">
                   <div className="flex-shrink-0">
@@ -71,7 +76,7 @@ export default function VeniceInsights({ analysis }: VeniceInsightsProps) {
             ))}
 
             {/* Friction Points */}
-            {analysis.frictionPoints.map((point, idx) => (
+            {frictionPoints.map((point, idx) => (
               <div key={idx} className="insight-card warning">
                 <div className="flex">
                   <div className="flex-shrink-0">
@@ -90,7 +95,7 @@ export default function VeniceInsights({ analysis }: VeniceInsightsProps) {
             ))}
 
             {/* Recommendations */}
-            {analysis.recommendations.map((rec, idx) => (
+            {recommendations.map((rec, idx) => (
               <div key={idx} className="insight-card success">
                 <div className="flex">
                   <div className="flex-shrink-0">

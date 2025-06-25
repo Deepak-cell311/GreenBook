@@ -441,7 +441,7 @@ export default function Analytics() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {veniceAnalysis.recommendations.map((rec, idx) => (
+                          {veniceAnalysis.map((rec, idx) => (
                             <div key={idx} className="p-4 border rounded-md">
                               <div className="flex items-center mb-2">
                                 <Badge className={`mr-2 ${
