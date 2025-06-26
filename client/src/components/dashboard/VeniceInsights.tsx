@@ -14,6 +14,7 @@ export default function VeniceInsights({ analysis }: VeniceInsightsProps) {
   Array.isArray(analysis.frictionPoints) && analysis.frictionPoints.length > 0 &&
   Array.isArray(analysis.recommendations) && analysis.recommendations.length > 0;
 
+  
   // Special case: Check if this is a "not enough data" message
   const notEnoughData = Array.isArray(analysis.trends) &&
   analysis.trends.length === 1 &&
@@ -22,7 +23,8 @@ export default function VeniceInsights({ analysis }: VeniceInsightsProps) {
   const trends = Array.isArray(analysis.trends) ? analysis.trends : [];
   const frictionPoints = Array.isArray(analysis.frictionPoints) ? analysis.frictionPoints : [];
   const recommendations = Array.isArray(analysis.recommendations) ? analysis.recommendations : [];
-
+  
+  console.log("Analysis: ", analysis);
   return (
     <Card>
       <CardHeader className="border-b border-border pb-3">
@@ -95,7 +97,7 @@ export default function VeniceInsights({ analysis }: VeniceInsightsProps) {
             ))}
 
             {/* Recommendations */}
-            {recommendations.map((rec, idx) => (
+            {analysis?.recommendations?.map((rec, idx) => (
               <div key={idx} className="insight-card success">
                 <div className="flex">
                   <div className="flex-shrink-0">

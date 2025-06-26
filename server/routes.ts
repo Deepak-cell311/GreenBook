@@ -388,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: 'You do not have permission to analyze this user\'s data' });
         }
       }
-
+      
       // Get prompt from request body
       const { prompt } = req.body;
 
@@ -404,7 +404,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate analysis using OpenAI
       try {
-        const analysis = await veniceAIService.generateCustomAnalysis(userAARs, userEvents, prompt);
+        const finalPrompt = `${prompt} Please return the response in plain text only, without Markdown, bullet points, or formatting symbols like **, /, *, -, or newlines.`;
+
+        const analysis = await veniceAIService.generateCustomAnalysis(userAARs, userEvents, finalPrompt);
 
         // Log this activity
         await logAudit(

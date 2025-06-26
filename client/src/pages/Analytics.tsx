@@ -31,7 +31,12 @@ export default function Analytics() {
   
   // Get Venice AI analysis
   const { data: veniceAnalysis, isLoading: isVeniceLoading } = useQuery({
-    queryKey: user?.unitId ? ['/api/units', user.unitId, 'analysis'] : [],
+    queryKey: user?.unitId ? [`/api/units/${user.unitId}/analysis`] : [],
+    queryFn: async () => {
+      if (!user?.unitId) return null;
+      const res = await fetch(`/api/units/${user.unitId}/analysis`);
+      return await res.json();
+    },
     enabled: !!user?.unitId,
   });
 
@@ -441,7 +446,7 @@ export default function Analytics() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {veniceAnalysis.map((rec, idx) => (
+                          {veniceAnalysis?.recommendations?.map((rec, idx) => (
                             <div key={idx} className="p-4 border rounded-md">
                               <div className="flex items-center mb-2">
                                 <Badge className={`mr-2 ${
